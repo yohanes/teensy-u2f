@@ -435,7 +435,7 @@ void processMessage(byte *buffer)
 			memcpy(handle, application_parameter, 32);
 			memcpy(handle+32, private_k, 32);
 			for (int i =0; i < 64; i++) {
-				handle[i] ^= handlekey[i%32];
+				handle[i] ^= handlekey[i%(sizeof(handlekey)-1)];
 			}
 
 			SHA256_CTX ctx;
@@ -558,7 +558,7 @@ void processMessage(byte *buffer)
 
 			memcpy(handle, client_handle, 64);
 			for (int i =0; i < 64; i++) {
-				handle[i] ^= handlekey[i%32];
+				handle[i] ^= handlekey[i%(sizeof(handlekey)-1)];
 			}
 			uint8_t *key = handle + 32;
 

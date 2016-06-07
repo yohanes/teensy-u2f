@@ -13,6 +13,15 @@ For the ECDSA key generation and signing this implementation uses the micro-ecc 
 
 <https://github.com/kmackay/micro-ecc>
 
+TODO:<br>
+1. Generate Master key pair (Mpub,Msec) and store in the device.<br>
+2. While registering to a service:<br>
+      Generate service keypair (Spub,Ssec) and encrypt Ssec with Mpub to get Handle. (also do XOR of Handle with magic string :)<br>
+      Only give Spub, Handle to service.<br>
+3. While logging in to service: you get Spub, Handle from service.<br>
+      (XOR of Handle with magic string :)<br>
+      Decrypt Handle using Msec to get Ssec.<br>
+      use Ssec to sign to prove/sign or perform the challenge.<br>
 
 License
 -------

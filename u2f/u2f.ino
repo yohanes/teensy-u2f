@@ -147,6 +147,26 @@ extern "C" {
 
 #define TIMEOUT_VALUE 1000
 
+typedef struct SHA256_HashContext {
+    uECC_HashContext uECC;
+    SHA256_CTX ctx;
+} SHA256_HashContext;
+
+void init_SHA256(uECC_HashContext *base) {
+    SHA256_HashContext *context = (SHA256_HashContext *)base;
+    sha256_init(&context->ctx);
+}
+void update_SHA256(uECC_HashContext *base,
+                   const uint8_t *message,
+                   unsigned message_size) {
+    SHA256_HashContext *context = (SHA256_HashContext *)base;
+    sha256_update(&context->ctx, message, message_size);
+}
+void finish_SHA256(uECC_HashContext *base, uint8_t *hash_result) {
+    SHA256_HashContext *context = (SHA256_HashContext *)base;
+    sha256_final(&context->ctx, hash_result);
+}
+
 void setup() {
 	Serial.begin(9600);
 	Serial.println(F("U2F"));
@@ -497,11 +517,16 @@ void processMessage(byte *buffer)
 
 			uint8_t *signature = resp_buffer; //temporary
 
-			uECC_sign((uint8_t *)attestation_key,
-				  sha256_hash,
-				  32,
-				  signature,
-				  curve);
+			uint8_t tmp[32 + 32 + 64];
+			SHA256_HashContext ectx = {{&init_SHA256, &update_SHA256, &finish_SHA256, 64, 32, tmp}};
+
+
+			uECC_sign_deterministic((uint8_t *)attestation_key,
+						sha256_hash,
+						32,
+						&ectx.uECC,
+						signature,
+						curve);
 
 			int len = 0;
 			large_resp_buffer[len++] = 0x05;
@@ -615,11 +640,15 @@ void processMessage(byte *buffer)
 
 				uint8_t *signature = resp_buffer; //temporary
 
-				uECC_sign((uint8_t *)key,
-					  sha256_hash,
-					  32,
-					  signature,
-					  curve);
+				uint8_t tmp[32 + 32 + 64];
+				SHA256_HashContext ectx = {{&init_SHA256, &update_SHA256, &finish_SHA256, 64, 32, tmp}};
+
+				uECC_sign_deterministic((uint8_t *)key,
+							sha256_hash,
+							32,
+							&ectx.uECC,
+							signature,
+							curve);
 
 				int len = 5;
 

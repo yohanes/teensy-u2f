@@ -1,4 +1,8 @@
+#ifndef DESKTOP_TEST
 #include <EEPROM.h>
+#endif
+#include <string.h>
+
 #include "sha256.h"
 #include "uECC.h"
 
@@ -106,6 +110,9 @@ struct ch_state {
 
 ch_state channel_states[MAX_CHANNEL];
 
+#ifdef DESKTOP_TEST
+extern int RNG(uint8_t *dest, unsigned size);
+#else
 extern "C" {
 
 	static int RNG(uint8_t *dest, unsigned size) {
@@ -136,7 +143,7 @@ extern "C" {
 	}
 
 }  // extern "C"
-
+#endif
 
 #define TIMEOUT_VALUE 1000
 
@@ -166,7 +173,7 @@ int allocate_new_channel()
 	int i;
 	//alloace new channel_id
 	int channel_id = 1;
-	int retry = 2;
+
 	do {
 		bool found = false;
 		for (i = 0;  i < MAX_CHANNEL; i++) {
@@ -389,7 +396,7 @@ void processMessage(byte *buffer)
 
 	byte INS = message[1];
 	byte P1 = message[2];
-	byte P2 = message[3];
+	//byte P2 = message[3];
 	int reqlength = (message[4] << 16) | (message[5] << 8) | message[6];
 
 	switch (INS) {
@@ -418,13 +425,13 @@ void processMessage(byte *buffer)
 			public_k[0] = 0x04;
 #ifdef DEBUG
 			Serial.println(F("Public K"));
-			for (int i =0; i < sizeof(public_k); i++) {
+			for (size_t i =0; i < sizeof(public_k); i++) {
 				Serial.print(public_k[i], HEX);
 				Serial.print(" ");
 			}
 			Serial.println("");
 			Serial.println(F("Private K"));
-			for (int i =0; i < sizeof(private_k); i++) {
+			for (size_t i =0; i < sizeof(private_k); i++) {
 				Serial.print(private_k[i], HEX);
 				Serial.print(" ");
 			}
@@ -658,7 +665,7 @@ void processPacket(byte *buffer)
 #ifdef DEBUG	
 	Serial.print("Process CMD ");
 #endif
-	char cmd = buffer[4]; //cmd or continuation
+	unsigned char cmd = buffer[4]; //cmd or continuation
 #ifdef DEBUG
 	Serial.println((int)cmd, HEX);
 #endif
@@ -721,16 +728,40 @@ void setOtherTimeout()
 
 int cont_start = 0;
 
+#ifndef DESKTOP_TEST
+#ifdef DEBUG
+
+void dump_hex(byte *buffer, int len)
+{
+	for (int i = 0 ; i < len; i++) {
+	    if (buffer[i] <= 0xf) {
+	       Serial.print(0);
+	    }
+	    Serial.print(buffer[i], HEX);
+	    Serial.print(" ");
+	}
+	Serial.println();
+}
+
+#endif
+#endif
+
 void loop() {
 	int n;
 
 	n = RawHID.recv(recv_buffer, 0); // 0 timeout = do not wait
 
 	if (n > 0) {
-#ifdef DEBUG		
-		Serial.print(F("\n\nReceived packet, CID: "));
+#ifdef DEBUG
+#ifndef DESKTOP_TEST
+       Serial.print("RAW_RECV: ");	    
+       dump_hex(recv_buffer, n);
+#endif	    
+		Serial.print(F("\n\nReceived packet, CID: "));		
 #endif		
-		int cid = *(int*)recv_buffer;
+		//int cid = *(int*)recv_buffer;
+		int cid; //handle strict-aliasing warning
+		memcpy(&cid, recv_buffer, sizeof(cid));		
 #ifdef DEBUG		
 		Serial.println(cid, HEX);
 #endif		
@@ -739,7 +770,7 @@ void loop() {
 			return;
 		}
 
-		char cmd_or_cont = recv_buffer[4]; //cmd or continuation
+		unsigned char cmd_or_cont = recv_buffer[4]; //cmd or continuation
 
 
 		int len = (recv_buffer[5]) << 8 | recv_buffer[6];

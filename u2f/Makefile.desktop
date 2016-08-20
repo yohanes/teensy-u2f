@@ -1,0 +1,9 @@
+
+all: desktop_test
+
+uECC.o	: uECC.c
+	gcc -Wall -c uECC.c
+
+desktop_test: desktop_test.cpp sha256.c u2f.ino uECC.o
+	      g++ -Wall -DIS_DESKTOP_TEST=1 desktop_test.cpp sha256.c uECC.o  -o desktop_test 
+	      

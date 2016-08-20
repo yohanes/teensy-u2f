@@ -515,13 +515,30 @@ void processMessage(byte *buffer)
 			//convert signature format
 			//http://bitcoin.stackexchange.com/questions/12554/why-the-signature-is-always-65-13232-bytes-long
 			large_resp_buffer[len++] = 0x30; //header: compound structure
+			uint8_t *total_len = &large_resp_buffer[len];			
 			large_resp_buffer[len++] = 0x44; //total length (32 + 32 + 2 + 2)
 			large_resp_buffer[len++] = 0x02;  //header: integer
-			large_resp_buffer[len++] = 32;  //32 byte
+
+			if (signature[0]>0x7f) {
+			   	large_resp_buffer[len++] = 33;  //33 byte
+				large_resp_buffer[len++] = 0;
+				(*total_len)++; //update total length
+			}  else {
+				large_resp_buffer[len++] = 32;  //32 byte
+			}
+			
 			memcpy(large_resp_buffer+len, signature, 32); //R value
 			len +=32;
 			large_resp_buffer[len++] = 0x02;  //header: integer
-			large_resp_buffer[len++] = 32;  //32 byte
+
+			if (signature[32]>0x7f) {
+				large_resp_buffer[len++] = 33;  //32 byte
+				large_resp_buffer[len++] = 0;
+				(*total_len)++;	//update total length
+			} else {
+				large_resp_buffer[len++] = 32;  //32 byte
+			}
+			
 			memcpy(large_resp_buffer+len, signature+32, 32); //R value
 			len +=32;
 
@@ -609,13 +626,30 @@ void processMessage(byte *buffer)
 				//convert signature format
 				//http://bitcoin.stackexchange.com/questions/12554/why-the-signature-is-always-65-13232-bytes-long
 				large_resp_buffer[len++] = 0x30; //header: compound structure
+				uint8_t *total_len = &large_resp_buffer[len];				
 				large_resp_buffer[len++] = 0x44; //total length (32 + 32 + 2 + 2)
 				large_resp_buffer[len++] = 0x02;  //header: integer
-				large_resp_buffer[len++] = 32;  //32 byte
+
+				if (signature[0]>0x7f) {
+			   	   large_resp_buffer[len++] = 33;  //33 byte
+				   large_resp_buffer[len++] = 0;
+				   (*total_len)++; //update total length
+				} else {
+				   large_resp_buffer[len++] = 32;  //32 byte
+				}
+				
 				memcpy(large_resp_buffer+len, signature, 32); //R value
 				len +=32;
 				large_resp_buffer[len++] = 0x02;  //header: integer
-				large_resp_buffer[len++] = 32;  //32 byte
+
+				if (signature[32]>0x7f) {
+				    large_resp_buffer[len++] = 33;  //32 byte
+				    large_resp_buffer[len++] = 0;
+				    (*total_len)++;	//update total length
+				} else {
+				    large_resp_buffer[len++] = 32;  //32 byte
+				}
+				
 				memcpy(large_resp_buffer+len, signature+32, 32); //R value
 				len +=32;
 				byte *last = large_resp_buffer+len;
